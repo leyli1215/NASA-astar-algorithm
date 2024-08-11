@@ -51,6 +51,7 @@ class AStarAlgorithm:
 
 class Obstacle:
     def __init__(self, graph, speed, direction, weight, start_position):
+        print(f"Creating Obstacle at {start_position}")
         self.G = graph
         self.speed = speed
         self.direction = direction
@@ -58,7 +59,7 @@ class Obstacle:
         self.position = start_position
 
     def update(self):
-        self.change_weights(1) #how can i get the default value of the obstacle (ie. like a paramater passed in that the weigt changes to after an obstacle has passed through)  
+        self.change_weights(1)  
         if self.direction == 'up':
             new_position = (self.position[0], self.position[1] + self.speed)
         elif self.direction == 'down':
@@ -75,7 +76,7 @@ class Obstacle:
         self.change_weights(100)
 
     def change_weights(self, num):
-        #check the other weights at the same position and change it to the maximum 
+       
         if self.position in self.G:
             neighbors = list(self.G.neighbors(self.position))
             for neighbor in neighbors:
@@ -92,7 +93,7 @@ class Simulator:
         self.G.graph['width'] = width
         self.G.graph['height'] = height
         self.obstacle_nodes = []
-        
+        self.static_obstacle_nodes = []
         self.fig, self.ax = plt.subplots(figsize=(10, 10))
         self.ax.set_xlim(-1, width)
         self.ax.set_ylim(-height, 1)
@@ -103,7 +104,7 @@ class Simulator:
         for edge in G.edges():
             G.edges[edge]['weight'] = 1
 
-            # Add diagonal edges
+          
         for x in range(self.width - 1):
             for y in range(self.height - 1):
                 center_node = (x + 0.5, y + 0.5)
@@ -121,7 +122,7 @@ class Simulator:
     def draw_graph(self, path=None):
                 pos = {(x, y): (y, -x) for x, y in self.G.nodes() if isinstance(x, int) and isinstance(y, int)}
 
-                # Add positions for center nodes
+               
                 for x in range(self.width - 1):
                     for y in range(self.height - 1):
                         center_node = (x + 0.5, y + 0.5)
@@ -133,35 +134,49 @@ class Simulator:
                         pos=pos,
                         node_color='lightgreen',
                         with_labels=True,
-                        node_size=300,  # Adjusted node size
-                        font_size=10,    # Adjusted font size
+                        node_size=300,  
+                        font_size=10,   
                         ax=self.ax)
 
                 normal_edges = [(u, v) for u, v in self.G.edges()
                                 if self.G[u][v]['weight'] != 100]
                 obstacle_edges = [(u, v) for u, v in self.G.edges()
                                   if self.G[u][v]['weight'] == 100]
+                static_obstacle_edges = [(u, v) for u, v in self.G.edges()
+                      if self.G[u][v]['weight'] == 50]
                 nx.draw_networkx_nodes(self.G,
                                        pos,
                                        nodelist=self.obstacle_nodes,
                                        node_color='red',
-                                       node_size=300,  # Adjusted node size for obstacles
+                                       node_size=300,  
                                        ax=self.ax)
+                nx.draw_networkx_nodes(self.G,
+                       pos,
+                       nodelist=self.static_obstacle_nodes,
+                       node_color='purple',
+                       node_size=300,
+                       ax=self.ax)
                 nx.draw_networkx_edges(self.G,
                                        pos,
                                        edgelist=normal_edges,
                                        edge_color='black',
-                                       width=1.5,  # Adjusted edge width
+                                       width=1.5,  
                                        ax=self.ax)
+                nx.draw_networkx_edges(self.G,
+                       pos,
+                       edgelist=static_obstacle_edges,
+                       edge_color='purple',
+                       width=1.5,  
+                       ax=self.ax)
                 nx.draw_networkx_edges(self.G,
                                        pos,
                                        edgelist=obstacle_edges,
                                        edge_color='red',
-                                       width=2,  # Adjusted edge width for obstacles
+                                       width=2,   
                                        ax=self.ax)
 
                 edge_labels = nx.get_edge_attributes(self.G, 'weight')
-                nx.draw_networkx_edge_labels(self.G, pos, edge_labels=edge_labels, font_size=8, bbox=dict(facecolor='white', edgecolor='none', alpha=0.7), ax=self.ax)  # Adjusted font size and background color for edge labels
+                nx.draw_networkx_edge_labels(self.G, pos, edge_labels=edge_labels, font_size=8, bbox=dict(facecolor='white', edgecolor='none', alpha=0.7), ax=self.ax)   
 
                 if path:
                     path_edges = list(zip(path, path[1:]))
@@ -169,99 +184,75 @@ class Simulator:
                                            pos,
                                            nodelist=path,
                                            node_color='orange',
-                                           node_size=300,  # Adjusted node size for path
+                                           node_size=300,   
                                            ax=self.ax)
                     nx.draw_networkx_edges(self.G,
                                            pos,
                                            edgelist=path_edges,
                                            edge_color='orange',
-                                           width=2.5,  # Adjusted edge width for path
+                                           width=2.5,   
                                            ax=self.ax)
 
 
+initialized = False  
 
 def animate(frame):
-    global simulator, obstacles
-    if frame == 0:
-        static_obstacle = Obstacle(simulator.G, 0, 'none', 100, (4, 3))
+    global simulator, obstacles, initialized
+
+    
+    if frame == 0 and not initialized:
+         
+        static_obstacle = Obstacle(simulator.G, 0, 'none', 100, (4, 0))
         obstacles.append(static_obstacle)
-        start_position = (random.randint(0, 4), random.randint(0,  9))
-        obstacle = Obstacle(simulator.G, 1, 'right', 100, start_position)
-        obstacles.append(obstacle)
+        static_obstacle = Obstacle(simulator.G, 0, 'none', 100, (3, 2))
+        obstacles.append(static_obstacle)
+        static_obstacle2 = Obstacle(simulator.G, 0, 'none', 100, (2, 3))
+        obstacles.append(static_obstacle2)
+
         
-        # for _ in range(3):
-        #     start_position = (random.randint(0, simulator.width - 1), random.randint(0, simulator.height - 1))
-        #     direction = random.choice(['up', 'down', 'left', 'right'])
-        #     obstacle = Obstacle(simulator.G, speed=1, direction=direction, weight = 1, start_position=start_position)
-        #     obstacles.append(obstacle)
-            #in order to make a static obstacle just make the speed 0 and the direction like none but the weight is the problem 
-        
+        moving_obstacle = Obstacle(simulator.G, 1, 'left', 100, (5,1))
+        obstacles.append(moving_obstacle)
+        moving_obstacle2 = Obstacle(simulator.G, 1, 'up', 100, (1,0))
+        obstacles.append(moving_obstacle2)
+        moving_obstacle3 = Obstacle(simulator.G, 1, 'up', 100, (4,1))
+        obstacles.append(moving_obstacle3)
+         
+        initialized = True  
 
-     
+    
+    simulator.obstacle_nodes.clear()
 
-    # A dictionary to look up obstacles given a location
-    # location_map[(2,1)] -> all obstacles at location (2,1)
-     
-
+    
     for obstacle in obstacles:
         obstacle.update()
         simulator.obstacle_nodes.append(obstacle.position)
 
+   
     for obstacle in obstacles:
-        if(obstacle.speed == 0):
+        if obstacle.speed == 0:
             obstacle.change_weights(50)
-        
+            simulator.static_obstacle_nodes.append(obstacle.position)
 
+   
     path = astar.a_star_algo(start_node, stop_node)
     simulator.draw_graph(path)
-    if frame > 50:  # Stop after 50 frames
-        frame = frame + 1
+
+   
+    if frame > 50:
         anim.event_source.stop()
 
-
 if __name__ == "__main__":
-    width, height = 10, 10
+    width, height = 6, 6
     simulator = Simulator(width, height)
     astar = AStarAlgorithm(simulator.G)
     obstacles = []
 
     start_node = (0, 0)
-    stop_node = (9, 9)
+    stop_node = (5,5)
 
-    anim = FuncAnimation(simulator.fig, animate, frames=100, interval=200)
+    anim = FuncAnimation(simulator.fig, animate, frames=100, interval=1200)
     plt.tight_layout()
     plt.show()
 
 
 
-
-"""
-Notes on code quality
-
-We can define Obstacle as its own class so the responsibility for managing obstacle locations is in the class rather than the a star graph logic.
-
-class Obstacle:
-    def __init__(speed, direction, size, start_position):
-        self.speed = speed
-        self.direction = direction
-        self.size = size
-        self.position = start_position
-
-    def update():
-        # do something here, like update self.position according to speed/direction
-        pass
-
-obstacles = []
-for i in range(0, 1000):
-    obstacles.append(Obstacle(...))
-
-
-    potential to dos: 
-    upload to github
-    make static obstacles and make it purple
-    calc costs?
-
-
-Github setup:
- - u
-"""
