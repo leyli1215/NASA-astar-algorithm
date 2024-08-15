@@ -1,15 +1,19 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import heapq
+import math
 import random
+
 from matplotlib.animation import FuncAnimation
 
 class AStarAlgorithm:
     def __init__(self, graph):
         self.G = graph
 
+  
     def heuristic(self, a, b):
-        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+        return math.sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2)
+
 
     def a_star_algo(self, start_node, stop_node):
         open_set = []
